@@ -1,12 +1,16 @@
-<img src="apps/web/public/logo.png" align="left" width="130" height="130">
-
-<div align="right" style="margin-left: 150px;">
+<table>
+<tr>
+<td width="130">
+<img src="apps/web/public/logo.png" width="130" height="130">
+</td>
+<td align="right">
 
 # OpenCut (prev AppCut)
 ### A free, open-source video editor for web, desktop, and mobile.
-</div>
 
-<br clear="left">
+</td>
+</tr>
+</table>
 
 ## Why?
 
