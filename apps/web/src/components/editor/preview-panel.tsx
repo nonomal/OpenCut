@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Expand } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { formatTimeCode } from "@/lib/time";
@@ -390,6 +390,7 @@ function PreviewToolbar({ hasAnyElements }: { hasAnyElements: boolean }) {
   const { isPlaying, toggle, currentTime } = usePlaybackStore();
   const { setCanvasSize, setCanvasSizeToOriginal } = useEditorStore();
   const { getTotalDuration } = useTimelineStore();
+  const { activeProject } = useProjectStore();
   const {
     currentPreset,
     isOriginal,
@@ -420,11 +421,19 @@ function PreviewToolbar({ hasAnyElements }: { hasAnyElements: boolean }) {
           )}
         >
           <span className="text-primary tabular-nums">
-            {formatTimeCode(currentTime, "HH:MM:SS:CS")}
+            {formatTimeCode(
+              currentTime,
+              "HH:MM:SS:FF",
+              activeProject?.fps || 30
+            )}
           </span>
           <span className="opacity-50">/</span>
           <span className="tabular-nums">
-            {formatTimeCode(getTotalDuration(), "HH:MM:SS:CS")}
+            {formatTimeCode(
+              getTotalDuration(),
+              "HH:MM:SS:FF",
+              activeProject?.fps || 30
+            )}
           </span>
         </p>
       </div>
@@ -447,7 +456,7 @@ function PreviewToolbar({ hasAnyElements }: { hasAnyElements: boolean }) {
           <DropdownMenuTrigger asChild>
             <Button
               size="sm"
-              className="!bg-panel-accent text-foreground/85 text-[0.75rem] h-auto rounded-none border border-muted-foreground px-0.5 py-0 font-light"
+              className="!bg-panel-accent text-foreground/85 text-[0.70rem] h-4 rounded-none border border-muted-foreground px-0.5 py-0 font-light"
               disabled={!hasAnyElements}
             >
               {getDisplayName()}
@@ -475,6 +484,13 @@ function PreviewToolbar({ hasAnyElements }: { hasAnyElements: boolean }) {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        <Button
+          variant="text"
+          size="icon"
+          className="!size-4 text-muted-foreground"
+        >
+          <Expand className="!size-4" />
+        </Button>
       </div>
     </div>
   );

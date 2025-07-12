@@ -13,6 +13,7 @@ import { useEditorStore } from "./editor-store";
 import { useMediaStore, getMediaAspectRatio } from "./media-store";
 import { storageService } from "@/lib/storage/storage-service";
 import { useProjectStore } from "./project-store";
+import { generateUUID } from "@/lib/utils";
 
 // Helper function to manage element naming with suffixes
 const getElementNameWithSuffix = (
@@ -279,7 +280,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
               : "Track";
 
       const newTrack: TimelineTrack = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         name: trackName,
         type,
         elements: [],
@@ -304,7 +305,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
               : "Track";
 
       const newTrack: TimelineTrack = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         name: trackName,
         type,
         elements: [],
@@ -363,14 +364,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
       const newElement: TimelineElement = {
         ...elementData,
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         startTime: elementData.startTime || 0,
         trimStart: 0,
         trimEnd: 0,
       } as TimelineElement; // Type assertion since we trust the caller passes valid data
 
       // If this is the first element and it's a media element, automatically set the project canvas size
-      // to match the media's aspect ratio
+      // to match the media's aspect ratio and FPS (for videos)
       if (isFirstElement && newElement.type === "media") {
         const mediaStore = useMediaStore.getState();
         const mediaItem = mediaStore.mediaItems.find(
@@ -385,6 +386,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           editorStore.setCanvasSizeFromAspectRatio(
             getMediaAspectRatio(mediaItem)
           );
+        }
+
+        // Set project FPS from the first video element
+        if (mediaItem && mediaItem.type === "video" && mediaItem.fps) {
+          const projectStore = useProjectStore.getState();
+          if (projectStore.activeProject) {
+            projectStore.updateProjectFps(mediaItem.fps);
+          }
         }
       }
 
@@ -556,7 +565,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       const secondDuration =
         element.duration - element.trimStart - element.trimEnd - relativeTime;
 
-      const secondElementId = crypto.randomUUID();
+      const secondElementId = generateUUID();
 
       updateTracksAndSave(
         get()._tracks.map((track) =>
@@ -682,7 +691,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
       // Find existing audio track or prepare to create one
       const existingAudioTrack = _tracks.find((t) => t.type === "audio");
-      const audioElementId = crypto.randomUUID();
+      const audioElementId = generateUUID();
 
       if (existingAudioTrack) {
         // Add audio element to existing audio track
@@ -706,7 +715,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       } else {
         // Create new audio track with the audio element in a single atomic update
         const newAudioTrack: TimelineTrack = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           name: "Audio Track",
           type: "audio",
           elements: [
