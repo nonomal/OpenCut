@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -16,6 +16,8 @@ import { usePanelStore } from "@/stores/panel-store";
 import { useProjectStore } from "@/stores/project-store";
 import { EditorProvider } from "@/components/editor-provider";
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
+import { useDisableBrowserZoom } from "@/hooks/use-disable-browser-zoom";
+import { Onboarding } from "@/components/onboarding";
 
 export default function Editor() {
   const {
@@ -33,25 +35,39 @@ export default function Editor() {
 
   const { activeProject, loadProject, createNewProject } = useProjectStore();
   const params = useParams();
+  const router = useRouter();
   const projectId = params.project_id as string;
+  const handledProjectIds = useRef<Set<string>>(new Set());
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(true);
 
+  useDisableBrowserZoom();
   usePlaybackControls();
 
   useEffect(() => {
-    const initializeProject = async () => {
-      if (projectId && (!activeProject || activeProject.id !== projectId)) {
-        try {
-          await loadProject(projectId);
-        } catch (error) {
-          console.error("Failed to load project:", error);
-          // If project doesn't exist, create a new one
-          await createNewProject("Untitled Project");
-        }
+    const initProject = async () => {
+      if (!projectId) return;
+
+      if (activeProject?.id === projectId) {
+        return;
+      }
+
+      if (handledProjectIds.current.has(projectId)) {
+        return;
+      }
+
+      try {
+        await loadProject(projectId);
+      } catch (error) {
+        handledProjectIds.current.add(projectId);
+
+        const newProjectId = await createNewProject("Untitled Project");
+        router.replace(`/editor/${newProjectId}`);
+        return;
       }
     };
 
-    initializeProject();
-  }, [projectId, activeProject, loadProject, createNewProject]);
+    initProject();
+  }, [projectId, activeProject?.id, loadProject, createNewProject, router]);
 
   return (
     <EditorProvider>
@@ -60,7 +76,7 @@ export default function Editor() {
         <div className="flex-1 min-h-0 min-w-0">
           <ResizablePanelGroup
             direction="vertical"
-            className="h-full w-full gap-1"
+            className="h-full w-full gap-[0.18rem]"
           >
             <ResizablePanel
               defaultSize={mainContent}
@@ -72,7 +88,7 @@ export default function Editor() {
               {/* Main content area */}
               <ResizablePanelGroup
                 direction="horizontal"
-                className="h-full w-full gap-1 px-2"
+                className="h-full w-full gap-[0.19rem] px-2"
               >
                 {/* Tools Panel */}
                 <ResizablePanel

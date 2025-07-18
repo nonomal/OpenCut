@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { storageService } from "@/lib/storage/storage-service";
 import { useTimelineStore } from "./timeline-store";
+import { generateUUID } from "@/lib/utils";
 
 export type MediaType = "image" | "video" | "audio";
 
@@ -14,6 +15,7 @@ export interface MediaItem {
   duration?: number; // For video/audio duration
   width?: number; // For video/image width
   height?: number; // For video/image height
+  fps?: number; // For video frame rate
   // Text-specific properties
   content?: string; // Text content
   fontSize?: number; // Font size
@@ -161,7 +163,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
   addMediaItem: async (projectId, item) => {
     const newItem: MediaItem = {
       ...item,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
     };
 
     // Add to local state immediately for UI responsiveness
@@ -211,7 +213,29 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
 
     try {
       const mediaItems = await storageService.loadAllMediaItems(projectId);
-      set({ mediaItems });
+
+      // Regenerate thumbnails for video items
+      const updatedMediaItems = await Promise.all(
+        mediaItems.map(async (item) => {
+          if (item.type === "video" && item.file) {
+            try {
+              const { thumbnailUrl, width, height } = await generateVideoThumbnail(item.file);
+              return {
+                ...item,
+                thumbnailUrl,
+                width: width || item.width,
+                height: height || item.height
+              };
+            } catch (error) {
+              console.error(`Failed to regenerate thumbnail for video ${item.id}:`, error);
+              return item;
+            }
+          }
+          return item;
+        })
+      );
+
+      set({ mediaItems: updatedMediaItems });
     } catch (error) {
       console.error("Failed to load media items:", error);
     } finally {

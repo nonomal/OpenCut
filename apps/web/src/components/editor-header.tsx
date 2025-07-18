@@ -7,6 +7,7 @@ import { useTimelineStore } from "@/stores/timeline-store";
 import { HeaderBase } from "./header-base";
 import { formatTimeCode } from "@/lib/time";
 import { useProjectStore } from "@/stores/project-store";
+import { KeyboardShortcutsHelp } from "./keyboard-shortcuts-help";
 
 export function EditorHeader() {
   const { getTotalDuration } = useTimelineStore();
@@ -31,13 +32,25 @@ export function EditorHeader() {
 
   const centerContent = (
     <div className="flex items-center gap-2 text-xs">
-      <span>{formatTimeCode(getTotalDuration(), "HH:MM:SS:CS")}</span>
+      <span>
+        {formatTimeCode(
+          getTotalDuration(),
+          "HH:MM:SS:FF",
+          activeProject?.fps || 30
+        )}
+      </span>
     </div>
   );
 
   const rightContent = (
     <nav className="flex items-center gap-2">
-      <Button size="sm" variant="primary" className="h-7 text-xs" onClick={handleExport}>
+      <KeyboardShortcutsHelp />
+      <Button
+        size="sm"
+        variant="primary"
+        className="h-7 text-xs"
+        onClick={handleExport}
+      >
         <Download className="h-4 w-4" />
         <span className="text-sm">Export</span>
       </Button>
