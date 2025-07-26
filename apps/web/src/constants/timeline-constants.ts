@@ -74,5 +74,34 @@ export const TIMELINE_CONSTANTS = {
   PIXELS_PER_SECOND: 50,
   TRACK_HEIGHT: 60, // Default fallback
   DEFAULT_TEXT_DURATION: 5,
+  DEFAULT_IMAGE_DURATION: 5,
   ZOOM_LEVELS: [0.25, 0.5, 1, 1.5, 2, 3, 4],
 } as const;
+
+// FPS presets for project settings
+export const FPS_PRESETS = [
+  { value: "24", label: "24 fps" },
+  { value: "25", label: "25 fps" },
+  { value: "30", label: "30 fps" },
+  { value: "60", label: "60 fps" },
+  { value: "120", label: "120 fps" },
+] as const;
+
+// Frame snapping utilities
+export function timeToFrame(time: number, fps: number): number {
+  return Math.round(time * fps);
+}
+
+export function frameToTime(frame: number, fps: number): number {
+  return frame / fps;
+}
+
+export function snapTimeToFrame(time: number, fps: number): number {
+  if (fps <= 0) return time; // Fallback for invalid FPS
+  const frame = timeToFrame(time, fps);
+  return frameToTime(frame, fps);
+}
+
+export function getFrameDuration(fps: number): number {
+  return 1 / fps;
+}

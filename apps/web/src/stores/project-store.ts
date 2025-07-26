@@ -4,6 +4,7 @@ import { storageService } from "@/lib/storage/storage-service";
 import { toast } from "sonner";
 import { useMediaStore } from "./media-store";
 import { useTimelineStore } from "./timeline-store";
+import { generateUUID } from "@/lib/utils";
 
 interface ProjectStore {
   activeProject: TProject | null;
@@ -25,6 +26,12 @@ interface ProjectStore {
     type: "color" | "blur",
     options?: { backgroundColor?: string; blurIntensity?: number }
   ) => Promise<void>;
+  updateProjectFps: (fps: number) => Promise<void>;
+
+  getFilteredAndSortedProjects: (
+    searchQuery: string,
+    sortOption: string
+  ) => TProject[];
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
@@ -35,7 +42,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   createNewProject: async (name: string) => {
     const newProject: TProject = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name,
       thumbnail: "",
       createdAt: new Date(),
@@ -223,7 +230,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
 
       const newProject: TProject = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         name: `(${nextNumber}) ${baseName}`,
         thumbnail: project.thumbnail,
         createdAt: new Date(),
@@ -292,5 +299,62 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         description: "Please try again",
       });
     }
+  },
+
+  updateProjectFps: async (fps: number) => {
+    const { activeProject } = get();
+    if (!activeProject) return;
+
+    const updatedProject = {
+      ...activeProject,
+      fps,
+      updatedAt: new Date(),
+    };
+
+    try {
+      await storageService.saveProject(updatedProject);
+      set({ activeProject: updatedProject });
+      await get().loadAllProjects(); // Refresh the list
+    } catch (error) {
+      console.error("Failed to update project FPS:", error);
+      toast.error("Failed to update project FPS", {
+        description: "Please try again",
+      });
+    }
+  },
+
+  getFilteredAndSortedProjects: (searchQuery: string, sortOption: string) => {
+    const { savedProjects } = get();
+
+    // Filter projects by search query
+    const filteredProjects = savedProjects.filter((project) =>
+      project.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Sort filtered projects
+    const sortedProjects = [...filteredProjects].sort((a, b) => {
+      const [key, order] = sortOption.split("-");
+
+      if (key !== "createdAt" && key !== "name") {
+        console.warn(`Invalid sort key: ${key}`);
+        return 0;
+      }
+
+      const aValue = a[key];
+      const bValue = b[key];
+
+      if (aValue === undefined || bValue === undefined) return 0;
+
+      if (order === "asc") {
+        if (aValue < bValue) return -1;
+        if (aValue > bValue) return 1;
+        return 0;
+      }
+      if (aValue > bValue) return -1;
+      if (aValue < bValue) return 1;
+      return 0;
+    });
+
+    return sortedProjects;
   },
 }));
